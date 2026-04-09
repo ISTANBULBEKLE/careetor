@@ -1,6 +1,6 @@
 # Careetor
 
-AI-powered job application automation platform. Evaluate job descriptions, generate tailored CVs, draft applications, and track your pipeline — all powered by a local LLM (Ollama) at zero cost.
+AI-powered job application automation platform. Evaluate job descriptions, generate tailored CVs, draft applications, and track your pipeline — powered by Claude AI.
 
 ## Tech Stack
 
@@ -9,7 +9,8 @@ AI-powered job application automation platform. Evaluate job descriptions, gener
 - **shadcn/ui** + **Tailwind CSS v4** (UI components)
 - **Drizzle ORM** + **Neon PostgreSQL** (database)
 - **better-auth** (authentication)
-- **Ollama** + **Qwen 2.5 32B** (local AI, free, no limits)
+- **Anthropic Claude API** (primary) — Opus 4.6 + Sonnet 4.6
+- **Google Gemini Flash** (free fallback) — auto-switches on rate limits
 - **Vercel AI SDK v6** (AI integration layer)
 - **recharts** (analytics charts)
 - **unpdf** (PDF text extraction)
@@ -29,28 +30,22 @@ AI-powered job application automation platform. Evaluate job descriptions, gener
 ## Quick Start
 
 ```bash
-# Prerequisites: Node.js 22+, Ollama installed
+# Prerequisites: Node.js 22+, Anthropic API key, Neon database
 
-# 1. Install Ollama model
-ollama pull qwen2.5:32b
-
-# 2. Start Ollama
-ollama serve
-
-# 3. Install dependencies
+# 1. Install dependencies
 npm install
 
-# 4. Configure environment
+# 2. Configure environment
 cp .env.example .env.local
-# Edit .env.local: set DATABASE_URL and BETTER_AUTH_SECRET
+# Edit .env.local: set DATABASE_URL, BETTER_AUTH_SECRET, ANTHROPIC_API_KEY
 
-# 5. Push database schema
+# 3. Push database schema
 npx drizzle-kit push
 
-# 6. Start dev server
+# 4. Start dev server
 npm run dev
 
-# 7. Open http://localhost:3000
+# 5. Open http://localhost:3000
 ```
 
 See [START.md](./START.md) for detailed setup instructions.
@@ -78,7 +73,7 @@ src/
 │   └── shared/       # Score badge, status badge, etc.
 ├── lib/
 │   ├── db/           # Drizzle schema (18 tables)
-│   ├── ai/           # Ollama client, prompts, schemas
+│   ├── ai/           # Claude client, prompts, schemas
 │   └── auth.ts       # better-auth config
 └── types/            # Shared TypeScript types
 ```

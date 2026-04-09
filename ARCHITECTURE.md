@@ -24,7 +24,7 @@ Careetor is a monolithic Next.js 16 application. There is no separate backend se
 - **Frontend**: React 19 with App Router (Server + Client Components)
 - **Backend**: Next.js Server Actions (no API routes except auth)
 - **Database**: Neon PostgreSQL via Drizzle ORM (HTTP driver, serverless-compatible)
-- **AI**: Ollama (local Qwen 2.5 32B) via Vercel AI SDK + @ai-sdk/openai (free, no limits)
+- **AI**: Anthropic Claude API via Vercel AI SDK + @ai-sdk/anthropic (Opus 4.6 + Sonnet 4.6)
 - **Auth**: better-auth (self-hosted, cookie-based sessions)
 
 ```
@@ -58,9 +58,9 @@ Careetor is a monolithic Next.js 16 application. There is no separate backend se
                    │                         │             │
                    ▼                         ▼
           ┌──────────────┐          ┌──────────────┐
-          │    Neon      │          │   Ollama     │
-          │  PostgreSQL  │          │  Qwen 2.5   │
-          │  (cloud)     │          │  (local)     │
+          │    Neon      │          │   Anthropic     │
+          │  PostgreSQL  │          │  Claude   │
+          │  (cloud)     │          │  (cloud)     │
           └──────────────┘          └──────────────┘
 ```
 
@@ -110,10 +110,10 @@ Careetor is a monolithic Next.js 16 application. There is no separate backend se
 │  ┌─────────────────────────┐  ┌──────────────────────────────────┐  │
 │  │  Drizzle ORM            │  │  AI Client                       │  │
 │  │                         │  │                                  │  │
-│  │  18 Tables:             │  │  Qwen 2.5 32B (heavy tasks):                       │  │
+│  │  18 Tables:             │  │  Opus 4.6 (evaluations):                       │  │
 │  │  ├─ Auth: users,        │  │  └─ Evaluation text (A-F blocks) │  │
 │  │  │  sessions, accounts  │  │                                  │  │
-│  │  ├─ CV: cvs, sections   │  │  Qwen 2.5 32B (structured output):                     │  │
+│  │  ├─ CV: cvs, sections   │  │  Claude Sonnet 4.6 (fast extraction & generation):                     │  │
 │  │  ├─ Jobs: jobs, evals,  │  │  ├─ CV parsing                   │  │
 │  │  │  eval_blocks         │  │  ├─ Score extraction             │  │
 │  │  ├─ Apps: applications, │  │  ├─ URL → JD parsing             │  │
@@ -129,8 +129,8 @@ Careetor is a monolithic Next.js 16 application. There is no separate backend se
          │                                │
          ▼                                ▼
 ┌──────────────────┐            ┌──────────────────┐
-│  Neon PostgreSQL │            │     Ollama       │
-│  (serverless)    │            │  (Qwen 2.5 32B)  │
+│  Neon PostgreSQL │            │     Anthropic       │
+│  (serverless)    │            │  (Claude 4.6)  │
 └──────────────────┘            └──────────────────┘
 ```
 
@@ -322,7 +322,7 @@ src/components/
 │  cv.actions.ts                                                  │
 │  ┌──────────────────┬──────────────────┬─────────────────────┐  │
 │  │ createCV()       │ DB: INSERT cvs   │ AI: none            │  │
-│  │ parseCV()        │ DB: SELECT cvs   │ AI: Qwen (Ollama)          │  │
+│  │ parseCV()        │ DB: SELECT cvs   │ AI: Sonnet          │  │
 │  │                  │     INSERT sects  │     generateObject  │  │
 │  │                  │     UPDATE cvs    │     (CV→sections)   │  │
 │  │ getUserCVs()     │ DB: SELECT cvs   │ AI: none            │  │
@@ -345,10 +345,10 @@ src/components/
 │                                                                 │
 │  evaluation.actions.ts                                          │
 │  ┌──────────────────┬──────────────────┬─────────────────────┐  │
-│  │ evaluateJob()    │ DB: SELECT jobs  │ AI: Step 1 — Qwen   │  │
+│  │ evaluateJob()    │ DB: SELECT jobs  │ AI: Step 1 — Opus   │  │
 │  │                  │     INSERT evals │     generateText     │  │
 │  │                  │     INSERT blocks│     (A-F blocks)     │  │
-│  │                  │     UPDATE jobs  │     Step 2 — Qwen  │  │
+│  │                  │     UPDATE jobs  │     Step 2 — Sonnet  │  │
 │  │                  │                  │     generateObject   │  │
 │  │                  │                  │     (scores JSON)    │  │
 │  │ getEvaluation()  │ DB: SELECT evals │ AI: none            │  │
@@ -358,9 +358,9 @@ src/components/
 │  application.actions.ts                                         │
 │  ┌──────────────────┬──────────────────┬─────────────────────┐  │
 │  │ createApplication│ DB: INSERT apps  │ AI: none            │  │
-│  │ generateCover    │ DB: SELECT jobs  │ AI: Qwen (Ollama)          │  │
+│  │ generateCover    │ DB: SELECT jobs  │ AI: Sonnet          │  │
 │  │   Letter()       │     UPSERT apps  │     generateText    │  │
-│  │ generateApp      │ DB: SELECT jobs  │ AI: Qwen (Ollama)          │  │
+│  │ generateApp      │ DB: SELECT jobs  │ AI: Sonnet          │  │
 │  │   Answers()      │                  │     generateText    │  │
 │  │ getApplication() │ DB: SELECT apps  │ AI: none            │  │
 │  │ updateAppNotes() │ DB: UPDATE apps  │ AI: none            │  │
@@ -368,7 +368,7 @@ src/components/
 │                                                                 │
 │  fetch-url.actions.ts                                           │
 │  ┌──────────────────┬──────────────────┬─────────────────────┐  │
-│  │ fetchAndParseJob │ DB: none         │ AI: Qwen (Ollama)          │  │
+│  │ fetchAndParseJob │ DB: none         │ AI: Sonnet          │  │
 │  │   Url()          │ HTTP: fetch(url) │     generateObject  │  │
 │  │                  │ + HTML strip     │     (HTML→job data) │  │
 │  └──────────────────┴──────────────────┴─────────────────────┘  │
@@ -493,17 +493,17 @@ src/components/
 ┌─────────────────────────────────────────────────────────┐
 │                    AI OPERATIONS                        │
 │                                                         │
-│  Qwen 2.5 32B via Ollama (heavyweight reasoning)        │
+│  Claude 4.6 via Anthropic (heavyweight reasoning)        │
 │  ┌───────────────────────────────────────────────────┐  │
 │  │ evaluateJob() — Step 1                            │  │
 │  │ generateText() → 6000 tokens max                  │  │
 │  │ Input: JD + CV (~4-8K tokens)                     │  │
 │  │ Output: Full A-F block evaluation (~4-6K tokens)  │  │
-│  │ Latency: ~60-120s (local, depends on hardware)    │  │
-│  │ Cost: FREE (runs locally via Ollama)              │  │
+│  │ Latency: ~30-60s    │  │
+│  │ Cost: ~$0.30 per evaluation              │  │
 │  └───────────────────────────────────────────────────┘  │
 │                                                         │
-│  Qwen 2.5 32B via Ollama (fast extraction & generation) │
+│  Claude 4.6 via Anthropic (fast extraction & generation) │
 │  ┌───────────────────────────────────────────────────┐  │
 │  │ parseCV()           → generateObject (CV→JSON)    │  │
 │  │ evaluateJob() Step2 → generateObject (text→scores)│  │
@@ -521,7 +521,7 @@ Job Description + CV Text
          │
          ▼
 ┌─────────────────────────────┐
-│  STEP 1: Qwen — Generate    │
+│  STEP 1: Claude — Generate    │
 │                             │
 │   Input: JD + CV            │
 │   System: Career advisor    │
@@ -538,7 +538,7 @@ Job Description + CV Text
               │ evalText (string)
               ▼
 ┌─────────────────────────────┐
-│  STEP 2: Qwen — Extract     │
+│  STEP 2: Claude — Extract     │
 │                             │
 │   Input: JD + evalText + CV │
 │   Schema: scoringSchema     │
@@ -569,7 +569,7 @@ Job Description + CV Text
 
 ```
 src/lib/ai/
-├── client.ts                  # ollama client, sonnet/opus model exports
+├── client.ts                  # anthropic client, sonnet/opus model exports
 ├── prompts/
 │   ├── shared-context.ts      # getSharedContext(profile?) — 6 archetypes, 10 scoring dims
 │   ├── evaluate-offer.ts      # buildEvaluationPrompt(jd, cv, articleDigest?)
@@ -704,7 +704,7 @@ export default function SomePage() {
 ### Journey: Upload CV → Parse → Edit
 
 ```
-User                    Browser                   Server Action              Database          AI (Ollama)
+User                    Browser                   Server Action              Database          AI (Claude)
  │                        │                          │                        │                  │
  │  Drop PDF file         │                          │                        │                  │
  │───────────────────────>│                          │                        │                  │
@@ -801,7 +801,7 @@ User                    Browser                   Server Actions             Dat
 | `drizzle-orm` 0.45 | Type-safe PostgreSQL ORM | All server actions |
 | `@neondatabase/serverless` 1.0 | Neon HTTP driver (edge-compatible) | db/index.ts |
 | `ai` 6.0 (Vercel AI SDK) | `generateText`, `generateObject` | evaluation, cv, application, fetch-url actions |
-| `@ai-sdk/openai` 1.x | OpenAI-compatible provider (connects to Ollama) | ai/client.ts |
+| `@ai-sdk/anthropic 3.0 | Claude provider adapter | ai/client.ts |
 | `@base-ui/react` 1.3 | Headless UI primitives (under shadcn/ui) | All UI components |
 | `recharts` 3.8 | Charts (radar, bar, pie, line) | analytics/, evaluation/score-radar |
 | `unpdf` 1.4 | PDF text extraction (WASM) | parse-file.actions.ts |
@@ -857,4 +857,4 @@ User                    Browser                   Server Actions             Dat
 ---
 
 *Generated: 2026-04-09*
-*Careetor v0.1.0 — Next.js 16.2.3 + Ollama (Qwen 2.5 32B) + Neon PostgreSQL*
+*Careetor v0.1.0 — Next.js 16.2.3 + Claude API + Neon PostgreSQL*

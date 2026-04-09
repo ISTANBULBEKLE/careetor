@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { applications, applicationAnswers, jobs } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { generateText } from "ai";
-import { sonnet } from "@/lib/ai/client";
+import { sonnet, fallbackModel, isRateLimited } from "@/lib/ai/client";
 
 export async function createApplication(
   jobId: string,

@@ -1,16 +1,74 @@
-import { createOpenAI } from "@ai-sdk/openai";
+import { createAnthropic } from "@ai-sdk/anthropic";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 
-// Ollama exposes an OpenAI-compatible API at localhost:11434
-const ollama = createOpenAI({
-  baseURL: process.env.OLLAMA_BASE_URL || "http://localhost:11434/v1",
-  apiKey: "ollama", // Ollama doesn't need a real key but the SDK requires one
-});
+// ============================================================
+// Provider Setup
+// ============================================================
 
-// Model name from env or default to Qwen 2.5 32B
-const modelName = process.env.OLLAMA_MODEL || "qwen2.5:32b";
+const anthropic = process.env.ANTHROPIC_API_KEY
+  ? createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+  : null;
 
-// Both exports use the same local model via Ollama chat completions API
-// sonnet = used for structured output (generateObject): CV parsing, scoring, URL parsing
-// opus = used for long-form generation (generateText): evaluations, cover letters
-export const sonnet = ollama.chat(modelName);
-export const opus = ollama.chat(modelName);
+const google = process.env.GOOGLE_GEMINI_API_KEY
+  ? createGoogleGenerativeAI({ apiKey: process.env.GOOGLE_GEMINI_API_KEY })
+  : null;
+
+// ============================================================
+// Model Definitions
+// ============================================================
+
+const claudeSonnet = anthropic?.("claude-sonnet-4-6");
+const claudeOpus = anthropic?.("claude-opus-4-6");
+const geminiFlash = google?.("gemini-2.0-flash");
+
+function requireModel<T>(primary: T | undefined, fallback: T | undefined): T {
+  const model = primary ?? fallback;
+  if (!model) {
+    throw new Error(
+      "No AI provider configured. Set ANTHROPIC_API_KEY or GOOGLE_GEMINI_API_KEY in .env.local"
+    );
+  }
+  return model;
+}
+
+/**
+ * Primary models — uses Anthropic if available, Gemini as fallback.
+ *
+ * sonnet: fast model for structured output (CV parsing, scoring, URL parsing)
+ * opus: powerful model for long-form generation (A-F evaluations)
+ */
+export const sonnet = requireModel(claudeSonnet, geminiFlash);
+export const opus = requireModel(claudeOpus, geminiFlash);
+
+/**
+ * Fallback model — Gemini Flash if available, otherwise null.
+ * Use this when the primary model hits rate limits.
+ *
+ * Usage in actions:
+ *   import { sonnet, fallbackModel } from "@/lib/ai/client";
+ *   try {
+ *     await generateText({ model: sonnet, ... });
+ *   } catch (e) {
+ *     if (isRateLimited(e) && fallbackModel) {
+ *       await generateText({ model: fallbackModel, ... });
+ *     }
+ *   }
+ */
+export const fallbackModel = geminiFlash ?? (anthropic ? claudeSonnet : null);
+
+/**
+ * Check if an error is a rate limit / quota error.
+ */
+export function isRateLimited(error: unknown): boolean {
+  const err = error as { statusCode?: number; message?: string };
+  return (
+    err.statusCode === 429 ||
+    err.statusCode === 529 ||
+    (typeof err.message === "string" &&
+      (err.message.includes("rate") ||
+        err.message.includes("quota") ||
+        err.message.includes("overloaded") ||
+        err.message.includes("credit") ||
+        err.message.includes("billing")))
+  );
+}

@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { evaluations, evaluationBlocks, jobs } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { generateText, generateObject } from "ai";
-import { opus, sonnet } from "@/lib/ai/client";
+import { opus, sonnet, fallbackModel, isRateLimited } from "@/lib/ai/client";
 import { z } from "zod";
 import { updateJobScore } from "./job.actions";
 
@@ -47,8 +47,7 @@ export async function evaluateJob(
   if (!job) throw new Error("Job not found");
 
   // Step 1: Generate the full evaluation text (A-F blocks)
-  const { text: evalText } = await generateText({
-    model: opus,
+  const evalPromptOptions = {
     system: `You are an expert career advisor and job evaluation system. You evaluate job descriptions against a candidate's CV using a structured A-F block methodology.
 
 SCORING DIMENSIONS (1-5 each, weighted):
@@ -106,7 +105,21 @@ Top 5 specific changes to make to the CV for this application. Keywords to injec
 
 End with a brief OVERALL ASSESSMENT with the score and recommendation.`,
     maxOutputTokens: 6000,
-  });
+  } as const;
+
+  let evalText: string;
+  try {
+    const result = await generateText({ model: opus, ...evalPromptOptions });
+    evalText = result.text;
+  } catch (error) {
+    if (isRateLimited(error) && fallbackModel) {
+      console.warn("[AI Fallback] Opus rate limited — using Gemini Flash for evaluation");
+      const result = await generateText({ model: fallbackModel, ...evalPromptOptions });
+      evalText = result.text;
+    } else {
+      throw error;
+    }
+  }
 
   // Step 2: Generate structured scoring
   const { object: scoring } = await generateObject({

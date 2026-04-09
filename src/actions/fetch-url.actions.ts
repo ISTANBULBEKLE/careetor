@@ -1,7 +1,7 @@
 "use server";
 
 import { generateObject } from "ai";
-import { sonnet } from "@/lib/ai/client";
+import { sonnet, fallbackModel, isRateLimited } from "@/lib/ai/client";
 import { z } from "zod";
 
 const jobParseSchema = z.object({

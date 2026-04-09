@@ -14,7 +14,7 @@ Careetor is a Next.js 16 SaaS web application that automates job searching: disc
 - **State**: React Query (TanStack) + Zustand
 - **Database**: PostgreSQL (Neon) + Drizzle ORM
 - **Auth**: better-auth v1.6
-- **AI**: Vercel AI SDK v6 + Ollama (local Qwen 2.5 32B, free, no limits)
+- **AI**: Vercel AI SDK v6 + Anthropic Claude API (primary) + Google Gemini Flash (fallback)
 - **Icons**: lucide-react
 - **Charts**: recharts
 
@@ -40,7 +40,7 @@ src/
 │   └── scanner/      # Portal list, scan status
 ├── lib/
 │   ├── db/           # Drizzle schema + connection
-│   ├── ai/           # Ollama/LLM prompts + Zod schemas
+│   ├── ai/           # Claude AI prompts + Zod schemas
 │   ├── auth.ts       # better-auth server config
 │   ├── auth-client.ts # Client-side auth
 │   ├── providers.tsx  # React Query + Theme + Tooltip providers
@@ -54,7 +54,7 @@ src/
 - Server Components by default; `"use client"` only for interactivity
 - Server Actions in `src/actions/` with `"use server"` directive
 - All DB queries go through Drizzle ORM
-- AI calls via Vercel AI SDK `generateText` + `generateObject` (Ollama backend)
+- AI calls via Vercel AI SDK `generateText` + `generateObject` (Anthropic Claude)
 - Import paths use `@/` alias
 - Component imports: `@/components/ui/...` for shadcn, `@/components/shared/...` for custom
 - Types in `@/types`, never inline complex type definitions
@@ -68,6 +68,5 @@ Generate migrations: `npx drizzle-kit generate`
 ## Environment Variables
 
 Copy `.env.example` to `.env.local` and fill in values.
-Required: DATABASE_URL, BETTER_AUTH_SECRET
-Optional: OLLAMA_BASE_URL (default: http://localhost:11434/v1), OLLAMA_MODEL (default: qwen2.5:32b)
-Ollama must be running locally: `ollama serve`
+Required: DATABASE_URL, BETTER_AUTH_SECRET, ANTHROPIC_API_KEY (or GOOGLE_GEMINI_API_KEY)
+At least one AI key is required. If both are set, Anthropic is primary with Gemini as fallback on rate limits.

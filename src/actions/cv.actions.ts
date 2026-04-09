@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { cvs, cvSections } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { generateObject } from "ai";
-import { sonnet } from "@/lib/ai/client";
+import { sonnet, fallbackModel, isRateLimited } from "@/lib/ai/client";
 import { z } from "zod";
 
 const cvSectionSchema = z.object({
