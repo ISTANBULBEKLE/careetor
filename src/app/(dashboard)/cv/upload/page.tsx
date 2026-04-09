@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { useSession } from "@/lib/auth-client";
 import { createCV, parseCV } from "@/actions/cv.actions";
+import { extractTextFromPDF } from "@/actions/parse-file.actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -57,7 +58,7 @@ export default function CVUploadPage() {
     }
   }, []);
 
-  function handleFile(file: File) {
+  async function handleFile(file: File) {
     const validTypes = [
       "text/plain",
       "application/pdf",
@@ -69,22 +70,50 @@ export default function CVUploadPage() {
       return;
     }
 
-    // For .txt files, read content directly
+    if (!name) setName(file.name.replace(/\.[^/.]+$/, ""));
+
+    // .txt files — read directly
     if (file.type === "text/plain" || file.name.endsWith(".txt")) {
       const reader = new FileReader();
       reader.onload = (e) => {
         const text = e.target?.result as string;
         setCvText(text);
-        if (!name) setName(file.name.replace(/\.[^/.]+$/, ""));
       };
       reader.readAsText(file);
-    } else {
-      // For PDF/DOCX, set the name and prompt user to paste text
-      if (!name) setName(file.name.replace(/\.[^/.]+$/, ""));
-      toast.info(
-        "PDF/DOCX parsing coming soon. Please paste the CV text below for now."
-      );
+      return;
     }
+
+    // PDF files — extract text server-side
+    if (file.type === "application/pdf" || file.name.endsWith(".pdf")) {
+      toast.info("Extracting text from PDF...");
+      try {
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const dataUrl = reader.result as string;
+            // Remove the data:application/pdf;base64, prefix
+            resolve(dataUrl.split(",")[1]);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        const text = await extractTextFromPDF(base64);
+        setCvText(text);
+        toast.success("PDF text extracted successfully!");
+      } catch (error) {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Failed to extract text from PDF"
+        );
+      }
+      return;
+    }
+
+    // DOCX — not yet supported, prompt paste
+    toast.info(
+      "DOCX parsing is not yet supported. Please paste the CV text below."
+    );
   }
 
   function handleFileInput(e: React.ChangeEvent<HTMLInputElement>) {
