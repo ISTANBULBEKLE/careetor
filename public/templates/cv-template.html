@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{NAME}} — CV</title>
+  <style>
+    @font-face {
+      font-family: 'Space Grotesk';
+      font-weight: 700;
+      src: url('./fonts/SpaceGrotesk-Bold.woff2') format('woff2');
+    }
+    @font-face {
+      font-family: 'DM Sans';
+      font-weight: 400;
+      src: url('./fonts/DMSans-Regular.woff2') format('woff2');
+    }
+    @font-face {
+      font-family: 'DM Sans';
+      font-weight: 500;
+      src: url('./fonts/DMSans-Medium.woff2') format('woff2');
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 10pt;
+      line-height: 1.5;
+      color: #1a1a2e;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .page {
+      width: {{PAGE_WIDTH}};
+      min-height: {{PAGE_HEIGHT}};
+      padding: 0.6in 0.7in;
+    }
+
+    /* Header */
+    .header { margin-bottom: 0.15in; }
+    .name {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 22pt;
+      font-weight: 700;
+      color: #1a1a2e;
+      letter-spacing: -0.02em;
+    }
+    .contact {
+      font-size: 9pt;
+      color: #4a4a6a;
+      margin-top: 4px;
+    }
+    .contact a { color: #4a4a6a; text-decoration: none; }
+    .contact span + span::before { content: ' · '; }
+
+    .divider {
+      height: 2px;
+      background: linear-gradient(90deg, #06b6d4, #8b5cf6);
+      margin: 0.12in 0;
+      border: none;
+    }
+
+    /* Sections */
+    .section { margin-bottom: 0.18in; }
+    .section-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 11pt;
+      font-weight: 700;
+      color: #1a1a2e;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.06in;
+      border-bottom: 1px solid #e2e2f0;
+      padding-bottom: 2px;
+    }
+
+    /* Summary */
+    .summary { font-size: 9.5pt; color: #2a2a4a; }
+
+    /* Competencies */
+    .competencies {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .competency-tag {
+      background: #f0f0ff;
+      color: #4a4a8a;
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-size: 8.5pt;
+      font-weight: 500;
+    }
+
+    /* Experience */
+    .entry { margin-bottom: 0.12in; }
+    .entry-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+    .entry-title {
+      font-weight: 500;
+      font-size: 10pt;
+      color: #1a1a2e;
+    }
+    .entry-company { font-weight: 700; }
+    .entry-date {
+      font-size: 8.5pt;
+      color: #6a6a8a;
+      white-space: nowrap;
+    }
+    .entry-subtitle {
+      font-size: 9pt;
+      color: #4a4a6a;
+      font-style: italic;
+    }
+    .entry ul {
+      margin-top: 3px;
+      padding-left: 0.2in;
+    }
+    .entry li {
+      font-size: 9.5pt;
+      margin-bottom: 2px;
+      color: #2a2a4a;
+    }
+
+    /* Skills */
+    .skills-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px 24px;
+      font-size: 9.5pt;
+    }
+    .skill-category { font-weight: 500; color: #1a1a2e; }
+    .skill-items { color: #4a4a6a; }
+
+    /* Education */
+    .edu-entry { margin-bottom: 4px; }
+
+    @media print {
+      body { -webkit-print-color-adjust: exact; }
+      .page { padding: 0.5in 0.6in; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="header">
+      <div class="name">{{NAME}}</div>
+      <div class="contact">
+        <span>{{EMAIL}}</span>
+        <span>{{LOCATION}}</span>
+        <span><a href="{{LINKEDIN_URL}}">{{LINKEDIN_DISPLAY}}</a></span>
+        <span><a href="{{PORTFOLIO_URL}}">{{PORTFOLIO_DISPLAY}}</a></span>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="section">
+      <div class="section-title">{{SECTION_SUMMARY}}</div>
+      <div class="summary">{{SUMMARY_TEXT}}</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">{{SECTION_COMPETENCIES}}</div>
+      <div class="competencies">{{COMPETENCIES}}</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">{{SECTION_EXPERIENCE}}</div>
+      {{EXPERIENCE}}
+    </div>
+
+    <div class="section">
+      <div class="section-title">{{SECTION_PROJECTS}}</div>
+      {{PROJECTS}}
+    </div>
+
+    <div class="section">
+      <div class="section-title">{{SECTION_EDUCATION}}</div>
+      {{EDUCATION}}
+    </div>
+
+    <div class="section">
+      <div class="section-title">{{SECTION_SKILLS}}</div>
+      <div class="skills-grid">{{SKILLS}}</div>
+    </div>
+  </div>
+</body>
+</html>
