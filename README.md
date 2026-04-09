@@ -1,36 +1,88 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Careetor
 
-## Getting Started
+AI-powered job application automation platform. Evaluate job descriptions, generate tailored CVs, draft applications, and track your pipeline — all powered by a local LLM (Ollama) at zero cost.
 
-First, run the development server:
+## Tech Stack
+
+- **Next.js 16.2** (App Router, Server Components, Server Actions)
+- **TypeScript** + **React 19**
+- **shadcn/ui** + **Tailwind CSS v4** (UI components)
+- **Drizzle ORM** + **Neon PostgreSQL** (database)
+- **better-auth** (authentication)
+- **Ollama** + **Qwen 2.5 32B** (local AI, free, no limits)
+- **Vercel AI SDK v6** (AI integration layer)
+- **recharts** (analytics charts)
+- **unpdf** (PDF text extraction)
+
+## Features
+
+- **CV Management** — Upload PDF/text, AI parses into editable sections
+- **Job Pipeline** — Add jobs via URL (auto-fetch + parse) or paste text
+- **AI Evaluation** — 10-dimension A-F scoring against your CV
+- **Tailored CVs** — ATS-optimized PDF generation per job
+- **Application Drafting** — Cover letters and form answer generation
+- **Application Tracker** — Kanban + table views with status management
+- **Interview Prep** — STAR+R story bank and company intelligence
+- **Analytics** — Funnel, score distribution, archetype performance
+- **Portal Scanner** — Company watchlist with 45+ pre-configured companies
+
+## Quick Start
 
 ```bash
+# Prerequisites: Node.js 22+, Ollama installed
+
+# 1. Install Ollama model
+ollama pull qwen2.5:32b
+
+# 2. Start Ollama
+ollama serve
+
+# 3. Install dependencies
+npm install
+
+# 4. Configure environment
+cp .env.example .env.local
+# Edit .env.local: set DATABASE_URL and BETTER_AUTH_SECRET
+
+# 5. Push database schema
+npx drizzle-kit push
+
+# 6. Start dev server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# 7. Open http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+See [START.md](./START.md) for detailed setup instructions.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Documentation
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| File | Description |
+|------|-------------|
+| [START.md](./START.md) | Step-by-step setup and run guide |
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | System architecture, diagrams, data flows |
+| [CLAUDE.md](./CLAUDE.md) | AI agent instructions and conventions |
 
-## Learn More
+## Project Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+├── app/              # Pages (App Router)
+│   ├── (auth)/       # Login, register
+│   ├── (dashboard)/  # All authenticated pages (17 routes)
+│   └── api/          # Auth API route
+├── actions/          # Server Actions (7 files)
+├── components/       # React components (41 files)
+│   ├── ui/           # shadcn/ui (22 components)
+│   ├── layout/       # Sidebar, header, mobile-nav
+│   └── shared/       # Score badge, status badge, etc.
+├── lib/
+│   ├── db/           # Drizzle schema (18 tables)
+│   ├── ai/           # Ollama client, prompts, schemas
+│   └── auth.ts       # better-auth config
+└── types/            # Shared TypeScript types
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## License
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Private project.
