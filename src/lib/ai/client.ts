@@ -19,7 +19,7 @@ const google = process.env.GOOGLE_GEMINI_API_KEY
 
 const claudeSonnet = anthropic?.("claude-sonnet-4-6");
 const claudeOpus = anthropic?.("claude-opus-4-6");
-const geminiFlash = google?.("gemini-2.0-flash");
+const geminiFlash = google?.("gemini-2.5-flash");
 
 function requireModel<T>(primary: T | undefined, fallback: T | undefined): T {
   const model = primary ?? fallback;
@@ -57,18 +57,26 @@ export const opus = requireModel(claudeOpus, geminiFlash);
 export const fallbackModel = geminiFlash ?? (anthropic ? claudeSonnet : null);
 
 /**
- * Check if an error is a rate limit / quota error.
+ * Check if an error is a rate limit, quota, or billing error.
+ * Checks nested causes since the AI SDK wraps errors in retry wrappers.
  */
 export function isRateLimited(error: unknown): boolean {
-  const err = error as { statusCode?: number; message?: string };
-  return (
-    err.statusCode === 429 ||
-    err.statusCode === 529 ||
-    (typeof err.message === "string" &&
-      (err.message.includes("rate") ||
-        err.message.includes("quota") ||
-        err.message.includes("overloaded") ||
-        err.message.includes("credit") ||
-        err.message.includes("billing")))
-  );
+  const keywords = ["rate", "quota", "overloaded", "credit", "billing", "exceeded", "limit"];
+
+  function check(err: unknown): boolean {
+    if (!err) return false;
+    const e = err as { statusCode?: number; message?: string; cause?: unknown };
+    if (e.statusCode === 429 || e.statusCode === 529) return true;
+    if (typeof e.message === "string") {
+      const lower = e.message.toLowerCase();
+      if (keywords.some((k) => lower.includes(k))) return true;
+    }
+    // Check nested cause (AI SDK wraps errors)
+    if (e.cause) return check(e.cause);
+    // Check stringified error as last resort
+    const str = String(err).toLowerCase();
+    return keywords.some((k) => str.includes(k));
+  }
+
+  return check(error);
 }

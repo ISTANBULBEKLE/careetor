@@ -114,7 +114,14 @@ End with a brief OVERALL ASSESSMENT with the score and recommendation.`,
   } catch (error) {
     if (isRateLimited(error) && fallbackModel) {
       console.warn("[AI Fallback] Opus rate limited — using Gemini Flash for evaluation");
-      const result = await generateText({ model: fallbackModel, ...evalPromptOptions });
+      const result = await generateText({
+        model: fallbackModel,
+        ...evalPromptOptions,
+        maxOutputTokens: 8192,
+        providerOptions: {
+          google: { thinkingConfig: { thinkingBudget: 0 } },
+        },
+      });
       evalText = result.text;
     } else {
       throw error;

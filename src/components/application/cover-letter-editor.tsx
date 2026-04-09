@@ -71,7 +71,8 @@ export function CoverLetterEditor({
       toast.success("Cover letter generated");
     } catch (err) {
       console.error("Cover letter generation failed:", err);
-      toast.error("Failed to generate cover letter");
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast.error(`Failed to generate cover letter: ${message.substring(0, 100)}`);
       setState(content ? "viewing" : "empty");
     }
   }, [jobId, userId, content]);

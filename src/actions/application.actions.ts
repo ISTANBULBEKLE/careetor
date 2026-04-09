@@ -34,28 +34,53 @@ export async function generateCoverLetter(
 
   if (!job) throw new Error("Job not found");
 
-  const { text } = await generateText({
-    model: sonnet,
-    system: `You are an expert cover letter writer. Write compelling, specific cover letters that:
-- Map JD requirements directly to candidate proof points
-- Use the "I'm choosing you" tone — confident without arrogance
-- Stay under 1 page (300-400 words)
-- Never use cliches: "passionate about", "leveraged", "spearheaded", "synergies"
-- Be specific and concrete — mention actual projects, metrics, outcomes
-- Never fabricate experience`,
-    prompt: `Write a cover letter for this application.
+  const coverLetterOptions = {
+    system: `You are an expert cover letter writer for modern tech/professional roles. Your cover letters are compelling, specific, and results-driven.
+
+RULES:
+- DO NOT include any header block (no name, address, date, phone, "Dear Hiring Manager" etc.)
+- Start directly with a strong opening paragraph that hooks the reader
+- Write 3-4 paragraphs totaling 250-350 words
+- Each paragraph must map a specific JD requirement to a concrete candidate achievement with metrics
+- Use the "I'm choosing you" tone — confident, specific, not generic
+- NEVER use cliches: "passionate about", "leveraged", "spearheaded", "synergies", "I am writing to apply"
+- NEVER fabricate experience — only reference what's in the CV
+- End with a forward-looking closing that signals mutual fit
+- Format as clean paragraphs with no markdown, no bullet points, no headers`,
+    prompt: `Write a modern, compelling cover letter body for this application.
 
 COMPANY: ${job.company}
 ROLE: ${job.role}
+
 JOB DESCRIPTION:
 ${job.jdText}
 
 CANDIDATE CV:
 ${cvText}
 
-Write a professional, specific cover letter. Format as clean text (not markdown).`,
-    maxOutputTokens: 1500,
-  });
+Write ONLY the cover letter body paragraphs. No header, no greeting, no signature — just the content paragraphs. Start with a compelling opening line.`,
+    maxOutputTokens: 4096,
+  } as const;
+
+  let text: string;
+  try {
+    const result = await generateText({ model: sonnet, ...coverLetterOptions });
+    text = result.text;
+  } catch (error) {
+    if (isRateLimited(error) && fallbackModel) {
+      console.warn("[AI Fallback] Sonnet rate limited — using Gemini for cover letter");
+      const result = await generateText({
+        model: fallbackModel,
+        ...coverLetterOptions,
+        providerOptions: {
+          google: { thinkingConfig: { thinkingBudget: 0 } },
+        },
+      });
+      text = result.text;
+    } else {
+      throw error;
+    }
+  }
 
   // Save cover letter
   const existing = await db.query.applications.findFirst({
