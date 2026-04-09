@@ -491,19 +491,19 @@ src/components/
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    AI OPERATIONS                         │
+│                    AI OPERATIONS                        │
 │                                                         │
-│  Qwen 2.5 32B via Ollama (heavyweight reasoning)                │
+│  Qwen 2.5 32B via Ollama (heavyweight reasoning)        │
 │  ┌───────────────────────────────────────────────────┐  │
 │  │ evaluateJob() — Step 1                            │  │
 │  │ generateText() → 6000 tokens max                  │  │
 │  │ Input: JD + CV (~4-8K tokens)                     │  │
 │  │ Output: Full A-F block evaluation (~4-6K tokens)  │  │
-│  │ Latency: ~60-120s (local, depends on hardware)     │  │
-│  │ Cost: FREE (runs locally via Ollama)               │  │
+│  │ Latency: ~60-120s (local, depends on hardware)    │  │
+│  │ Cost: FREE (runs locally via Ollama)              │  │
 │  └───────────────────────────────────────────────────┘  │
 │                                                         │
-│  Qwen 2.5 32B via Ollama (fast extraction & generation)       │
+│  Qwen 2.5 32B via Ollama (fast extraction & generation) │
 │  ┌───────────────────────────────────────────────────┐  │
 │  │ parseCV()           → generateObject (CV→JSON)    │  │
 │  │ evaluateJob() Step2 → generateObject (text→scores)│  │

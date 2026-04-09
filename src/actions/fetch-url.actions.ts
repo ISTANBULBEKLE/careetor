@@ -25,25 +25,25 @@ const jobParseSchema = z.object({
 
 export type ParsedJob = z.infer<typeof jobParseSchema>;
 
-export async function fetchAndParseJobUrl(url: string): Promise<ParsedJob> {
-  // Fetch the page HTML
-  const response = await fetch(url, {
-    headers: {
-      "User-Agent":
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    },
-    signal: AbortSignal.timeout(15000),
-  });
+// Sites known to block server-side fetches
+const BLOCKED_DOMAINS = [
+  "indeed.com",
+  "linkedin.com",
+  "glassdoor.com",
+  "monster.com",
+  "ziprecruiter.com",
+  "dice.com",
+];
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch URL: ${response.status} ${response.statusText}`);
-  }
+// Multiple User-Agent strings to try
+const USER_AGENTS = [
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+  "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+  "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+];
 
-  const html = await response.text();
-
-  // Strip scripts, styles, and HTML tags to get readable text
-  const textContent = html
+function stripHtml(html: string): string {
+  return html
     .replace(/<script[\s\S]*?<\/script>/gi, "")
     .replace(/<style[\s\S]*?<\/style>/gi, "")
     .replace(/<nav[\s\S]*?<\/nav>/gi, "")
@@ -59,15 +59,83 @@ export async function fetchAndParseJobUrl(url: string): Promise<ParsedJob> {
     .replace(/\n{3,}/g, "\n\n")
     .replace(/[ \t]+/g, " ")
     .trim()
-    .substring(0, 15000); // Limit to avoid token overflow
+    .substring(0, 15000);
+}
 
-  if (textContent.length < 100) {
+export async function fetchAndParseJobUrl(url: string): Promise<ParsedJob> {
+  // Check for known blocked domains
+  const hostname = new URL(url).hostname.toLowerCase();
+  const blockedDomain = BLOCKED_DOMAINS.find(
+    (d) => hostname.includes(d)
+  );
+  if (blockedDomain) {
     throw new Error(
-      "Could not extract enough text from the page. The page might require JavaScript to render. Try copying the job description text manually."
+      `${blockedDomain} blocks automated fetching. ` +
+      `Please open the job page in your browser, copy the full job description text, ` +
+      `and paste it in the "Paste Text" tab instead.`
     );
   }
 
-  // Use Claude to extract structured job info from the raw text
+  // Try fetching with multiple User-Agents
+  let html: string | null = null;
+  let lastError: string = "";
+
+  for (const ua of USER_AGENTS) {
+    try {
+      const response = await fetch(url, {
+        headers: {
+          "User-Agent": ua,
+          Accept:
+            "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.9",
+          "Cache-Control": "no-cache",
+        },
+        redirect: "follow",
+        signal: AbortSignal.timeout(15000),
+      });
+
+      if (response.ok) {
+        html = await response.text();
+        break;
+      }
+
+      lastError = `${response.status} ${response.statusText}`;
+
+      // Don't retry on 403/401 — the site is blocking us
+      if (response.status === 403 || response.status === 401) {
+        throw new Error(
+          `This site blocked the request (${response.status}). ` +
+          `Please open the job page in your browser, copy the full job description, ` +
+          `and paste it in the "Paste Text" tab.`
+        );
+      }
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("blocked")) {
+        throw error; // Re-throw our formatted errors
+      }
+      lastError =
+        error instanceof Error ? error.message : "Unknown fetch error";
+    }
+  }
+
+  if (!html) {
+    throw new Error(
+      `Could not fetch the page (${lastError}). ` +
+      `Try copying the job description and using the "Paste Text" tab.`
+    );
+  }
+
+  const textContent = stripHtml(html);
+
+  if (textContent.length < 100) {
+    throw new Error(
+      "Could not extract enough text from the page. " +
+      "The page might require JavaScript to render (single-page app). " +
+      "Please copy the job description text and use the \"Paste Text\" tab."
+    );
+  }
+
+  // Use LLM to extract structured job info from the raw text
   const { object } = await generateObject({
     model: sonnet,
     schema: jobParseSchema,
